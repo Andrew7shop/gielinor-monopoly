@@ -142,7 +142,9 @@ h2 { color: var(--wood); }
 }
 .cell.corner { align-items: center; justify-content: center; text-align: center; font-size: .6rem; font-weight: bold; background: var(--parchment-dark); }
 .cell .name { font-weight: bold; }
-.cell .price { color: var(--wood-light); margin-top: auto; }
+.cell .price { color: var(--wood-light); margin-top: auto; display: flex; align-items: center; gap: 2px; }
+.coin-icon { width: 11px; height: 11px; flex: none; vertical-align: middle; }
+.space-type-icon { width: 55%; max-width: 26px; margin: 2px auto 0; opacity: .85; }
 .cell .group-bar { height: 8px; margin: -2px -2px 2px; }
 .cell .houses { display: flex; gap: 1px; margin-top: 1px; }
 .cell .house-dot { width: 6px; height: 6px; background: #2e7d32; border-radius: 1px; }
@@ -206,7 +208,8 @@ h2 { color: var(--wood); }
 }
 .stack-card:nth-child(1) { transform: rotate(-7deg) translate(-2px, 1px); }
 .stack-card:nth-child(2) { transform: rotate(4deg) translate(2px, -1px); }
-.stack-card.top { display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transform: none; }
+.stack-card.top { display: flex; align-items: center; justify-content: center; transform: none; }
+.stack-card.top img { width: 62%; height: 62%; object-fit: contain; }
 .chance-deck .top { background: #f6e7c9; }
 .community-deck .top { background: #e3e0f7; }
 .deck-label { font-size: .65rem; font-weight: bold; color: var(--wood); white-space: nowrap; }
@@ -223,6 +226,7 @@ h2 { color: var(--wood); }
 }
 .card-reveal.pop .revealed-card { animation: card-pop .4s ease-out forwards; }
 @keyframes card-pop { to { transform: scale(1) rotateY(0deg); opacity: 1; } }
+.revealed-card-icon { width: 56px; height: 56px; object-fit: contain; margin-bottom: 6px; }
 .revealed-card-deck { font-weight: bold; font-size: 1.05rem; margin-bottom: 6px; color: var(--wood); }
 .revealed-card-who { font-size: .75rem; color: var(--wood-light); margin-bottom: 8px; }
 .revealed-card-text { font-style: italic; font-size: .95rem; color: var(--ink); }

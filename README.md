@@ -51,6 +51,15 @@ Render's free web services spin down after a period of inactivity and take
 a few seconds to wake back up on the next visit — that's expected and fine
 for a casual game night.
 
+## Art credits
+
+Coin-stack, Treasure Trail, and Random Event icons are from
+[game-icons.net](https://game-icons.net), licensed
+[CC BY 3.0](https://creativecommons.org/licenses/by/3.0/):
+"Two coins", "Coins", "Coins pile", "Money stack", "Gold stack" by Delapouite;
+"Treasure map" by Lorc; "Open treasure chest" by Skoll; "Present" by
+Delapouite; "Gift trap" by Lorc.
+
 ## Known limitations (v1)
 
 - Rooms live in server memory only — a server restart clears all games in

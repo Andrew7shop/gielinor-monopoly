@@ -19,6 +19,28 @@ let cardSeqInitialized = false;
 let cardHideTimer = null;
 let cardEls = null;
 
+const ICONS = {
+  coinTiers: [
+    '/images/icons/coin-tier-1.svg',
+    '/images/icons/coin-tier-2.svg',
+    '/images/icons/coin-tier-3.svg',
+    '/images/icons/coin-tier-4.svg',
+    '/images/icons/coin-tier-5.svg'
+  ],
+  chanceBoard: '/images/icons/treasure-trail-board.svg',
+  chanceCard: '/images/icons/treasure-trail-card.svg',
+  communityBoard: '/images/icons/random-event-board.svg',
+  communityCard: '/images/icons/random-event-card.svg'
+};
+
+function moneyIcon(amount) {
+  if (amount < 100) return ICONS.coinTiers[0];
+  if (amount < 200) return ICONS.coinTiers[1];
+  if (amount < 300) return ICONS.coinTiers[2];
+  if (amount < 350) return ICONS.coinTiers[3];
+  return ICONS.coinTiers[4];
+}
+
 const el = (id) => document.getElementById(id);
 const GROUP_LABEL = {
   brown: 'Brown', lightBlue: 'Light Blue', pink: 'Pink', orange: 'Orange',
@@ -197,8 +219,21 @@ function buildBoardCells() {
     if (space.price) {
       const priceEl = document.createElement('div');
       priceEl.className = 'price';
-      priceEl.textContent = fmtGp(space.price);
+      const coinImg = document.createElement('img');
+      coinImg.className = 'coin-icon';
+      coinImg.src = moneyIcon(space.price);
+      coinImg.alt = '';
+      priceEl.appendChild(coinImg);
+      priceEl.appendChild(document.createTextNode(fmtGp(space.price)));
       cell.appendChild(priceEl);
+    }
+
+    if (space.type === 'chance' || space.type === 'community') {
+      const typeIcon = document.createElement('img');
+      typeIcon.className = 'space-type-icon';
+      typeIcon.src = space.type === 'chance' ? ICONS.chanceBoard : ICONS.communityBoard;
+      typeIcon.alt = '';
+      cell.appendChild(typeIcon);
     }
 
     const housesEl = document.createElement('div');
@@ -228,16 +263,17 @@ function buildBoardCells() {
     <div id="dice-caption" class="dice-caption"></div>
     <div class="card-decks">
       <div class="card-deck">
-        <div class="deck-stack chance-deck"><div class="stack-card"></div><div class="stack-card"></div><div class="stack-card top">🗺️</div></div>
+        <div class="deck-stack chance-deck"><div class="stack-card"></div><div class="stack-card"></div><div class="stack-card top"><img src="${ICONS.chanceBoard}" alt=""></div></div>
         <div class="deck-label">Treasure Trail</div>
       </div>
       <div class="card-deck">
-        <div class="deck-stack community-deck"><div class="stack-card"></div><div class="stack-card"></div><div class="stack-card top">🎁</div></div>
+        <div class="deck-stack community-deck"><div class="stack-card"></div><div class="stack-card"></div><div class="stack-card top"><img src="${ICONS.communityBoard}" alt=""></div></div>
         <div class="deck-label">Random Event</div>
       </div>
     </div>
     <div id="card-reveal" class="card-reveal" hidden>
       <div class="revealed-card">
+        <img id="revealed-card-icon" class="revealed-card-icon" alt="" />
         <div class="revealed-card-deck" id="revealed-card-deck"></div>
         <div class="revealed-card-who" id="revealed-card-who"></div>
         <div class="revealed-card-text" id="revealed-card-text"></div>
@@ -254,6 +290,7 @@ function buildBoardCells() {
   setDieFace(diceEls.die2, 1);
   cardEls = {
     reveal: document.getElementById('card-reveal'),
+    icon: document.getElementById('revealed-card-icon'),
     deckLabel: document.getElementById('revealed-card-deck'),
     who: document.getElementById('revealed-card-who'),
     text: document.getElementById('revealed-card-text')
@@ -338,7 +375,8 @@ function renderCardStage(state) {
 function showCardReveal(card) {
   clearTimeout(cardHideTimer);
   const isChance = card.deck === 'chance';
-  cardEls.deckLabel.textContent = isChance ? '🗺️ Treasure Trail' : '🎁 Random Event';
+  cardEls.icon.src = isChance ? ICONS.chanceCard : ICONS.communityCard;
+  cardEls.deckLabel.textContent = isChance ? 'Treasure Trail' : 'Random Event';
   cardEls.reveal.classList.toggle('chance', isChance);
   cardEls.reveal.classList.toggle('community', !isChance);
   cardEls.who.textContent = card.playerName ? `${card.playerName} draws...` : '';
@@ -420,7 +458,7 @@ function renderPlayers(state) {
     row.innerHTML = `
       <span>${tok ? tok.icon : ''}</span>
       <span class="pname">${p.name}${p.id === myId ? ' (you)' : ''}</span>
-      <span class="pcash">${fmtGp(p.cash)}</span>
+      <span class="pcash"><img class="coin-icon" src="${moneyIcon(p.cash)}" alt="">${fmtGp(p.cash)}</span>
       ${p.inJail ? '<span class="jail-tag">jailed</span>' : ''}
       ${!p.connected ? '<span class="disc-tag">offline</span>' : ''}
     `;
@@ -732,7 +770,7 @@ function renderAutoModal(state) {
       <div class="modal-overlay">
         <div class="modal-box">
           <h3>${space.name}</h3>
-          <p>Price: <strong>${fmtGp(space.price)}</strong></p>
+          <p>Price: <img class="coin-icon" src="${moneyIcon(space.price)}" alt=""><strong>${fmtGp(space.price)}</strong></p>
           ${rentTableHtml(space)}
           <div class="action-row">
             <button class="btn btn-primary" id="buy-btn" ${me.cash < space.price ? 'disabled' : ''}>Buy</button>
