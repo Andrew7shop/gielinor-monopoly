@@ -56,7 +56,7 @@ const BOARD = [
   /* 17 */ { type: 'community', name: 'Random Event' },
   /* 18 */ property("Seers' Village", 'orange', 180, [14, 70, 200, 550, 750, 950], 100, 90),
   /* 19 */ property('Ardougne', 'orange', 200, [16, 80, 220, 600, 800, 1000], 100, 100),
-  /* 20 */ { type: 'free-parking', name: "Wizards' Tower Rest" },
+  /* 20 */ { type: 'free-parking', name: 'Drop Party @ The Party Room!' },
   /* 21 */ property('Yanille', 'red', 220, [18, 90, 250, 700, 875, 1050], 150, 110),
   /* 22 */ { type: 'chance', name: 'Treasure Trail' },
   /* 23 */ property('Canifis', 'red', 220, [18, 90, 250, 700, 875, 1050], 150, 110),
