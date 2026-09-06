@@ -824,6 +824,13 @@ function ownedProps(state, playerId) {
     .map((idx) => ({ idx, space: BOARD[idx], prop: state.properties[idx] }));
 }
 
+function groupColorVar(space) {
+  if (space.type === 'property') return `var(--${space.group})`;
+  if (space.type === 'railroad') return 'var(--railroad)';
+  if (space.type === 'utility') return 'var(--utility)';
+  return null;
+}
+
 function ownsFullGroup(state, playerId, group) {
   const idxs = BOARD.map((s, i) => (s.type === 'property' && s.group === group ? i : -1)).filter((i) => i >= 0);
   return idxs.length > 0 && idxs.every((i) => state.properties[i] && state.properties[i].owner === playerId);
@@ -847,7 +854,9 @@ function renderProperties(state) {
     const minHouses = groupIdxs.length ? Math.min(...groupIdxs.map((i) => (state.properties[i] ? state.properties[i].houses : 0))) : 0;
     const maxHouses = groupIdxs.length ? Math.max(...groupIdxs.map((i) => (state.properties[i] ? state.properties[i].houses : 0))) : 0;
 
-    row.innerHTML = `<span class="prop-name">${space.name}</span> ${prop.mortgaged ? '<em>(mortgaged)</em>' : ''} ${prop.houses ? `<span>Lv.${prop.houses}</span>` : ''}`;
+    const swatchColor = groupColorVar(space);
+    const swatch = swatchColor ? `<span class="prop-swatch" style="background:${swatchColor}"></span>` : '';
+    row.innerHTML = `${swatch}<span class="prop-name">${space.name}</span> ${prop.mortgaged ? '<em>(mortgaged)</em>' : ''} ${prop.houses ? `<span>Lv.${prop.houses}</span>` : ''}`;
     const actions = document.createElement('div');
     actions.className = 'prop-actions';
 
