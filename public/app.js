@@ -831,6 +831,11 @@ function groupColorVar(space) {
   return null;
 }
 
+function propSwatchHtml(space) {
+  const color = groupColorVar(space);
+  return color ? `<span class="prop-swatch" style="background:${color}"></span>` : '';
+}
+
 function ownsFullGroup(state, playerId, group) {
   const idxs = BOARD.map((s, i) => (s.type === 'property' && s.group === group ? i : -1)).filter((i) => i >= 0);
   return idxs.length > 0 && idxs.every((i) => state.properties[i] && state.properties[i].owner === playerId);
@@ -854,9 +859,7 @@ function renderProperties(state) {
     const minHouses = groupIdxs.length ? Math.min(...groupIdxs.map((i) => (state.properties[i] ? state.properties[i].houses : 0))) : 0;
     const maxHouses = groupIdxs.length ? Math.max(...groupIdxs.map((i) => (state.properties[i] ? state.properties[i].houses : 0))) : 0;
 
-    const swatchColor = groupColorVar(space);
-    const swatch = swatchColor ? `<span class="prop-swatch" style="background:${swatchColor}"></span>` : '';
-    row.innerHTML = `${swatch}<span class="prop-name">${space.name}</span> ${prop.mortgaged ? '<em>(mortgaged)</em>' : ''} ${prop.houses ? `<span>Lv.${prop.houses}</span>` : ''}`;
+    row.innerHTML = `${propSwatchHtml(space)}<span class="prop-name">${space.name}</span> ${prop.mortgaged ? '<em>(mortgaged)</em>' : ''} ${prop.houses ? `<span>Lv.${prop.houses}</span>` : ''}`;
     const actions = document.createElement('div');
     actions.className = 'prop-actions';
 
@@ -1083,7 +1086,7 @@ function openTradeModal(state) {
             <label>Gold (max ${me.cash})</label>
             <input type="number" id="offer-cash" min="0" max="${me.cash}" value="0" />
             <label>Properties</label>
-            ${myProps.map((x) => `<label class="checkbox-row"><input type="checkbox" class="offer-prop" value="${x.idx}" /> ${x.space.name}</label>`).join('') || '<p class="hint">None tradable.</p>'}
+            ${myProps.map((x) => `<label class="checkbox-row"><input type="checkbox" class="offer-prop" value="${x.idx}" /> ${propSwatchHtml(x.space)}${x.space.name}</label>`).join('') || '<p class="hint">None tradable.</p>'}
             <label>Get Out of Jail scrolls (max ${me.jailCards})</label>
             <input type="number" id="offer-jail" min="0" max="${me.jailCards}" value="0" />
           </div>
@@ -1093,7 +1096,7 @@ function openTradeModal(state) {
             <label>Gold (max ${target.cash})</label>
             <input type="number" id="request-cash" min="0" max="${target.cash}" value="0" />
             <label>Properties</label>
-            ${theirProps.map((x) => `<label class="checkbox-row"><input type="checkbox" class="request-prop" value="${x.idx}" /> ${x.space.name}</label>`).join('') || '<p class="hint">None tradable.</p>'}
+            ${theirProps.map((x) => `<label class="checkbox-row"><input type="checkbox" class="request-prop" value="${x.idx}" /> ${propSwatchHtml(x.space)}${x.space.name}</label>`).join('') || '<p class="hint">None tradable.</p>'}
             <label>Get Out of Jail scrolls (max ${target.jailCards})</label>
             <input type="number" id="request-jail" min="0" max="${target.jailCards}" value="0" />
           </div>
