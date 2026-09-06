@@ -32,6 +32,7 @@ class Room {
     this.doublesCount = 0;
     this.turnState = { hasRolled: false, mustRollAgain: false };
     this.lastRoll = null;
+    this.rollSeq = 0;
     this.chanceDeck = shuffledDeck(TREASURE_TRAIL);
     this.chancePos = 0;
     this.communityDeck = shuffledDeck(RANDOM_EVENT);
@@ -413,6 +414,7 @@ class Room {
     const d1 = 1 + Math.floor(Math.random() * 6);
     const d2 = 1 + Math.floor(Math.random() * 6);
     this.lastRoll = { d1, d2 };
+    this.rollSeq += 1;
     const isDouble = d1 === d2;
 
     if (player.inJail) {
@@ -760,6 +762,7 @@ class Room {
       currentPlayerId: this.players[this.turnIndex] ? this.players[this.turnIndex].id : null,
       turnState: this.turnState,
       lastRoll: this.lastRoll,
+      rollSeq: this.rollSeq,
       pendingPurchase: this.pendingPurchase,
       auction: this.auction
         ? { ...this.auction, active: this._auctionActive, spaceName: BOARD[this.auction.spaceIndex].name }

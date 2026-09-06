@@ -10,6 +10,10 @@ let latestState = null;
 let cellEls = [];
 let chatLog = [];
 let tradeModalOpen = false;
+let lastSeenRollSeq = 0;
+let diceSeqInitialized = false;
+let diceAnimTimer = null;
+let diceEls = null;
 
 const el = (id) => document.getElementById(id);
 const GROUP_LABEL = {
@@ -208,6 +212,85 @@ function buildBoardCells() {
     board.appendChild(cell);
     cellEls[i] = { cell, housesEl, ownerEl, tokensEl };
   });
+
+  const center = document.createElement('div');
+  center.className = 'board-center';
+  center.innerHTML = `
+    <div class="board-title">🗺️ Gielinor Monopoly</div>
+    <div class="dice-stage">
+      <div class="die" id="die-1"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+      <div class="die" id="die-2"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+    </div>
+    <div id="dice-caption" class="dice-caption"></div>
+  `;
+  board.appendChild(center);
+  diceEls = {
+    die1: document.getElementById('die-1'),
+    die2: document.getElementById('die-2'),
+    caption: document.getElementById('dice-caption')
+  };
+  setDieFace(diceEls.die1, 1);
+  setDieFace(diceEls.die2, 1);
+}
+
+const PIPS_FOR_VALUE = {
+  1: [5],
+  2: [1, 9],
+  3: [1, 5, 9],
+  4: [1, 3, 7, 9],
+  5: [1, 3, 5, 7, 9],
+  6: [1, 3, 4, 6, 7, 9]
+};
+
+function setDieFace(dieEl, value) {
+  const on = PIPS_FOR_VALUE[value] || [];
+  dieEl.querySelectorAll('.pip').forEach((pip, idx) => {
+    pip.classList.toggle('on', on.includes(idx + 1));
+  });
+}
+
+function renderDiceStage(state) {
+  if (!diceEls) return;
+  if (!state.lastRoll) return;
+  if (!diceSeqInitialized) {
+    diceSeqInitialized = true;
+    lastSeenRollSeq = state.rollSeq;
+    setDieFace(diceEls.die1, state.lastRoll.d1);
+    setDieFace(diceEls.die2, state.lastRoll.d2);
+    const roller0 = state.players.find((p) => p.id === state.currentPlayerId);
+    diceEls.caption.textContent = roller0 ? `${roller0.name} rolled ${state.lastRoll.d1} + ${state.lastRoll.d2}` : '';
+    return;
+  }
+  const isNewRoll = state.rollSeq && state.rollSeq !== lastSeenRollSeq;
+  const roller = state.players.find((p) => p.id === state.currentPlayerId);
+
+  if (isNewRoll) {
+    lastSeenRollSeq = state.rollSeq;
+    clearInterval(diceAnimTimer);
+    diceEls.die1.classList.add('rolling');
+    diceEls.die2.classList.add('rolling');
+    diceEls.caption.textContent = roller ? `${roller.name} is rolling...` : 'Rolling...';
+    let ticks = 0;
+    diceAnimTimer = setInterval(() => {
+      ticks += 1;
+      setDieFace(diceEls.die1, 1 + Math.floor(Math.random() * 6));
+      setDieFace(diceEls.die2, 1 + Math.floor(Math.random() * 6));
+      if (ticks >= 8) {
+        clearInterval(diceAnimTimer);
+        setDieFace(diceEls.die1, state.lastRoll.d1);
+        setDieFace(diceEls.die2, state.lastRoll.d2);
+        diceEls.die1.classList.remove('rolling');
+        diceEls.die2.classList.remove('rolling');
+        diceEls.caption.textContent = roller
+          ? `${roller.name} rolled ${state.lastRoll.d1} + ${state.lastRoll.d2}${state.lastRoll.d1 === state.lastRoll.d2 ? ' — doubles!' : ''}`
+          : '';
+      }
+    }, 70);
+  } else if (!diceAnimTimer) {
+    setDieFace(diceEls.die1, state.lastRoll.d1);
+    setDieFace(diceEls.die2, state.lastRoll.d2);
+    if (roller) diceEls.caption.textContent = `${roller.name} rolled ${state.lastRoll.d1} + ${state.lastRoll.d2}`;
+  }
 }
 
 function updateBoardCells(state) {
@@ -257,6 +340,7 @@ function updateBoardCells(state) {
 
 function renderGame(state) {
   updateBoardCells(state);
+  renderDiceStage(state);
   renderPlayers(state);
   renderControls(state);
   renderProperties(state);
@@ -302,13 +386,6 @@ function renderControls(state) {
 
   const current = state.players.find((p) => p.id === state.currentPlayerId);
   const isMyTurn = state.currentPlayerId === myId;
-
-  if (state.lastRoll) {
-    const r = document.createElement('div');
-    r.className = 'roll-result';
-    r.textContent = `🎲 ${state.lastRoll.d1} + ${state.lastRoll.d2}`;
-    panel.appendChild(r);
-  }
 
   if (state.pendingDebt) {
     renderDebtPanel(panel, state);
