@@ -50,6 +50,8 @@ class Room {
     this.lastPartyClaim = null;
     this.goSeq = 0;
     this.lastGoPass = null;
+    this.jailSendSeq = 0;
+    this.lastJailSend = null;
     this.kickVotes = {};
     this.winnerId = null;
     this.started = false;
@@ -172,6 +174,8 @@ class Room {
     player.jailTurns = 0;
     this.doublesCount = 0;
     this.turnState.mustRollAgain = false;
+    this.jailSendSeq += 1;
+    this.lastJailSend = { playerName: player.name, tokenId: player.tokenId };
     this.addLog(`${player.name} is sent to Draynor Jail!`);
   }
 
@@ -870,6 +874,8 @@ class Room {
       lastPartyClaim: this.lastPartyClaim,
       goSeq: this.goSeq,
       lastGoPass: this.lastGoPass,
+      jailSendSeq: this.jailSendSeq,
+      lastJailSend: this.lastJailSend,
       kickVotes: Object.fromEntries(Object.entries(this.kickVotes).map(([k, v]) => [k, [...v]])),
       log: this.log.slice(-40),
       winnerId: this.winnerId

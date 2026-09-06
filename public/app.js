@@ -24,6 +24,8 @@ let lastSeenPartyClaimSeq = 0;
 let partyClaimSeqInitialized = false;
 let lastSeenGoSeq = 0;
 let goSeqInitialized = false;
+let lastSeenJailSendSeq = 0;
+let jailSendSeqInitialized = false;
 
 const ICONS = {
   coinTiers: [
@@ -523,6 +525,36 @@ function showGoPopup(pass) {
   setTimeout(() => banner.remove(), 2300);
 }
 
+function renderJailPopup(state) {
+  if (typeof state.jailSendSeq !== 'number') return;
+  if (!jailSendSeqInitialized) {
+    jailSendSeqInitialized = true;
+    lastSeenJailSendSeq = state.jailSendSeq;
+    return;
+  }
+  if (state.jailSendSeq !== lastSeenJailSendSeq) {
+    lastSeenJailSendSeq = state.jailSendSeq;
+    if (state.lastJailSend) showJailPopup(state.lastJailSend);
+  }
+}
+
+function showJailPopup(send) {
+  const tok = TOKENS.find((t) => t.id === send.tokenId);
+  const overlay = document.createElement('div');
+  overlay.className = 'jail-popup-overlay';
+  overlay.innerHTML = `
+    <div class="jail-popup-box">
+      <div class="jail-cell">
+        <span class="jail-cell-token">${tok ? tok.icon : '?'}</span>
+        <div class="jail-cell-bars"></div>
+      </div>
+      <div class="jail-popup-caption">${send.playerName} is caught and thrown into Draynor Jail!</div>
+    </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => overlay.classList.add('fade-out'), 1900);
+  setTimeout(() => overlay.remove(), 2400);
+}
+
 function showCardReveal(card) {
   clearTimeout(cardHideTimer);
   const isChance = card.deck === 'chance';
@@ -591,6 +623,7 @@ function renderGame(state) {
   renderCardStage(state);
   renderPartyFund(state);
   renderGoPopup(state);
+  renderJailPopup(state);
   renderPlayers(state);
   renderControls(state);
   renderProperties(state);
