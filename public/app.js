@@ -22,6 +22,8 @@ let partyFundEls = null;
 let lastSeenPartyFund = null;
 let lastSeenPartyClaimSeq = 0;
 let partyClaimSeqInitialized = false;
+let lastSeenGoSeq = 0;
+let goSeqInitialized = false;
 
 const ICONS = {
   coinTiers: [
@@ -444,6 +446,28 @@ function launchConfetti(claim) {
   setTimeout(() => layer.remove(), 3600);
 }
 
+function renderGoPopup(state) {
+  if (typeof state.goSeq !== 'number') return;
+  if (!goSeqInitialized) {
+    goSeqInitialized = true;
+    lastSeenGoSeq = state.goSeq;
+    return;
+  }
+  if (state.goSeq !== lastSeenGoSeq) {
+    lastSeenGoSeq = state.goSeq;
+    if (state.lastGoPass) showGoPopup(state.lastGoPass);
+  }
+}
+
+function showGoPopup(pass) {
+  const banner = document.createElement('div');
+  banner.className = 'go-popup-banner';
+  banner.innerHTML = `<img class="coin-icon" src="${moneyIcon(pass.amount)}" alt="">${pass.playerName} passes Lumbridge and collects ${fmtGp(pass.amount)}!`;
+  document.body.appendChild(banner);
+  setTimeout(() => banner.classList.add('fade-out'), 1800);
+  setTimeout(() => banner.remove(), 2300);
+}
+
 function showCardReveal(card) {
   clearTimeout(cardHideTimer);
   const isChance = card.deck === 'chance';
@@ -467,6 +491,7 @@ function updateBoardCells(state) {
     const prop = state.properties[i];
     refs.cell.classList.toggle('mortgaged', !!(prop && prop.mortgaged));
     refs.cell.classList.toggle('current-space', state.currentPlayerId != null && state.players.some((p) => p.id === state.currentPlayerId && p.position === i));
+    refs.cell.classList.toggle('my-space', state.players.some((p) => p.id === myId && !p.bankrupt && p.position === i));
 
     refs.housesEl.innerHTML = '';
     if (prop && prop.houses > 0) {
@@ -510,6 +535,7 @@ function renderGame(state) {
   renderDiceStage(state);
   renderCardStage(state);
   renderPartyFund(state);
+  renderGoPopup(state);
   renderPlayers(state);
   renderControls(state);
   renderProperties(state);

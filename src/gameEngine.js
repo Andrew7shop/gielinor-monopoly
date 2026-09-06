@@ -48,6 +48,8 @@ class Room {
     this.partyFund = 100;
     this.partyClaimSeq = 0;
     this.lastPartyClaim = null;
+    this.goSeq = 0;
+    this.lastGoPass = null;
     this.winnerId = null;
     this.started = false;
   }
@@ -134,22 +136,23 @@ class Room {
   movePlayerBy(player, amount) {
     const old = player.position;
     let dest = (old + amount) % BOARD.length;
-    if (dest < old) {
-      player.cash += GO_SALARY;
-      this.addLog(`${player.name} passes Lumbridge and collects ${GO_SALARY}gp.`);
-    }
+    if (dest < old) this.awardGoSalary(player);
     player.position = dest;
     return dest;
   }
 
   movePlayerTo(player, dest, { collectGo = true } = {}) {
     const old = player.position;
-    if (collectGo && dest <= old) {
-      player.cash += GO_SALARY;
-      this.addLog(`${player.name} passes Lumbridge and collects ${GO_SALARY}gp.`);
-    }
+    if (collectGo && dest <= old) this.awardGoSalary(player);
     player.position = dest;
     return dest;
+  }
+
+  awardGoSalary(player) {
+    player.cash += GO_SALARY;
+    this.goSeq += 1;
+    this.lastGoPass = { playerName: player.name, amount: GO_SALARY };
+    this.addLog(`${player.name} passes Lumbridge and collects ${GO_SALARY}gp.`);
   }
 
   sendToJail(player) {
@@ -796,6 +799,8 @@ class Room {
       partyFund: this.partyFund,
       partyClaimSeq: this.partyClaimSeq,
       lastPartyClaim: this.lastPartyClaim,
+      goSeq: this.goSeq,
+      lastGoPass: this.lastGoPass,
       log: this.log.slice(-40),
       winnerId: this.winnerId
     };
