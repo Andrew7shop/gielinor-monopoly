@@ -45,6 +45,7 @@ class Room {
     this.pendingDebt = null;
     this.trades = {};
     this.tradeSeq = 1;
+    this.partyFund = 100;
     this.winnerId = null;
     this.started = false;
   }
@@ -202,7 +203,8 @@ class Room {
         if (payee) payee.cash += amount;
         this.addLog(`${player.name} pays ${amount}gp to ${payee ? payee.name : 'the bank'}.`);
       } else {
-        this.addLog(`${player.name} pays ${amount}gp to the Grand Exchange.`);
+        this.partyFund += amount;
+        this.addLog(`${player.name} pays ${amount}gp into the Party Room Fund (now ${this.partyFund}gp).`);
       }
     } else {
       this.pendingDebt = { playerId: player.id, amount, payeeId: payeeId || null };
@@ -219,6 +221,8 @@ class Room {
       if (payeeId) {
         const payee = this.findPlayer(payeeId);
         if (payee) payee.cash += amount;
+      } else {
+        this.partyFund += amount;
       }
       this.addLog(`${player.name} settles the ${amount}gp debt.`);
       this.pendingDebt = null;
@@ -242,6 +246,7 @@ class Room {
       });
       this.addLog(`${player.name} goes bankrupt! Everything is handed over to ${payee.name}.`);
     } else {
+      this.partyFund += player.cash;
       owned.forEach((i) => {
         this.properties[i] = { owner: null, houses: 0, mortgaged: false };
       });
@@ -398,12 +403,21 @@ class Room {
       case 'go-to-jail':
         this.sendToJail(player);
         break;
+      case 'free-parking':
+        this.claimPartyFund(player);
+        break;
       case 'go':
       case 'jail':
-      case 'free-parking':
       default:
         break;
     }
+  }
+
+  claimPartyFund(player) {
+    const amount = this.partyFund;
+    player.cash += amount;
+    this.addLog(`${player.name} claims the ${amount}gp Party Room Fund!`);
+    this.partyFund = 100;
   }
 
   // ---------- Turn actions ----------
@@ -775,6 +789,7 @@ class Room {
         : null,
       pendingDebt: this.pendingDebt,
       trades: Object.values(this.trades),
+      partyFund: this.partyFund,
       log: this.log.slice(-40),
       winnerId: this.winnerId
     };

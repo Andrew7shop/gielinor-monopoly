@@ -18,6 +18,8 @@ let lastSeenCardSeq = 0;
 let cardSeqInitialized = false;
 let cardHideTimer = null;
 let cardEls = null;
+let partyFundEls = null;
+let lastSeenPartyFund = null;
 
 const ICONS = {
   coinTiers: [
@@ -261,6 +263,10 @@ function buildBoardCells() {
       <div class="die" id="die-2"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
     </div>
     <div id="dice-caption" class="dice-caption"></div>
+    <div id="party-fund-box" class="party-fund">
+      <span class="party-fund-label">🎉 Party Room Fund</span>
+      <span class="party-fund-amount"><img id="party-fund-icon" class="coin-icon" alt=""><span id="party-fund-value">100gp</span></span>
+    </div>
     <div class="card-decks">
       <div class="card-deck">
         <div class="deck-stack chance-deck"><div class="stack-card"></div><div class="stack-card"></div><div class="stack-card top"><img src="${ICONS.chanceBoard}" alt=""></div></div>
@@ -295,6 +301,12 @@ function buildBoardCells() {
     who: document.getElementById('revealed-card-who'),
     text: document.getElementById('revealed-card-text')
   };
+  partyFundEls = {
+    box: document.getElementById('party-fund-box'),
+    icon: document.getElementById('party-fund-icon'),
+    value: document.getElementById('party-fund-value')
+  };
+  partyFundEls.icon.src = moneyIcon(100);
 }
 
 const PIPS_FOR_VALUE = {
@@ -372,6 +384,19 @@ function renderCardStage(state) {
   }
 }
 
+function renderPartyFund(state) {
+  if (!partyFundEls) return;
+  if (typeof state.partyFund !== 'number') return;
+  partyFundEls.value.textContent = fmtGp(state.partyFund);
+  partyFundEls.icon.src = moneyIcon(state.partyFund);
+  if (lastSeenPartyFund !== null && state.partyFund !== lastSeenPartyFund) {
+    partyFundEls.box.classList.remove('flash');
+    void partyFundEls.box.offsetWidth;
+    partyFundEls.box.classList.add('flash');
+  }
+  lastSeenPartyFund = state.partyFund;
+}
+
 function showCardReveal(card) {
   clearTimeout(cardHideTimer);
   const isChance = card.deck === 'chance';
@@ -437,6 +462,7 @@ function renderGame(state) {
   updateBoardCells(state);
   renderDiceStage(state);
   renderCardStage(state);
+  renderPartyFund(state);
   renderPlayers(state);
   renderControls(state);
   renderProperties(state);
