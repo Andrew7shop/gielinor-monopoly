@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gielinor Monopoly</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div id="toast" class="toast" hidden></div>
+
+  <!-- HOME -->
+  <section id="screen-home" class="screen">
+    <div class="home-card">
+      <h1>🗺️ Gielinor Monopoly</h1>
+      <p class="subtitle">A RuneScape-flavored Monopoly you can play online with friends.</p>
+
+      <label class="field">
+        <span>Your name</span>
+        <input id="name-input" maxlength="20" placeholder="Zezima" />
+      </label>
+
+      <div class="field">
+        <span>Pick your skill token</span>
+        <div id="token-picker" class="token-picker"></div>
+      </div>
+
+      <div class="home-actions">
+        <button id="create-room-btn" class="btn btn-primary">Create a Room</button>
+        <div class="join-row">
+          <input id="join-code-input" maxlength="4" placeholder="ROOM CODE" style="text-transform:uppercase" />
+          <button id="join-room-btn" class="btn">Join Room</button>
+        </div>
+      </div>
+      <p class="hint">Original artwork &amp; names inspired by RuneScape — not affiliated with Jagex.</p>
+    </div>
+  </section>
+
+  <!-- LOBBY -->
+  <section id="screen-lobby" class="screen" hidden>
+    <div class="lobby-card">
+      <h2>Room <span id="lobby-code" class="room-code"></span></h2>
+      <p class="hint">Share this code with friends so they can join.</p>
+      <ul id="lobby-players" class="lobby-players"></ul>
+      <button id="start-game-btn" class="btn btn-primary" hidden>Start Game</button>
+      <p id="lobby-wait-msg" class="hint"></p>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="screen-game" class="screen" hidden>
+    <div class="game-layout">
+      <div class="board-wrap">
+        <div id="board" class="board"></div>
+      </div>
+      <aside class="sidebar">
+        <div id="players-panel" class="panel"></div>
+        <div id="controls-panel" class="panel"></div>
+        <div id="properties-panel" class="panel"></div>
+        <div id="trades-panel" class="panel"></div>
+        <div class="panel log-panel">
+          <h3>Adventurer's Log</h3>
+          <div id="log-list" class="log-list"></div>
+        </div>
+        <div class="panel chat-panel">
+          <h3>Chat</h3>
+          <div id="chat-list" class="chat-list"></div>
+          <form id="chat-form">
+            <input id="chat-input" maxlength="300" placeholder="Say something..." autocomplete="off" />
+          </form>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <div id="modal-root"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
