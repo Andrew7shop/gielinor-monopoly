@@ -118,14 +118,63 @@ el('join-room-btn').addEventListener('click', () => {
   socket.emit('join-room', { code, name, tokenId });
 });
 
+// ---------------- Reconnect ----------------
+
+const SESSION_KEY = 'gielinorMonopolySession';
+let attemptingRejoin = false;
+
+function saveSession(code, playerId) {
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify({ code, playerId })); } catch (e) { /* ignore */ }
+}
+function clearSession() {
+  try { localStorage.removeItem(SESSION_KEY); } catch (e) { /* ignore */ }
+}
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function showRejoinOffer() {
+  const session = loadSession();
+  if (!session || !session.code || !session.playerId) return;
+  el('rejoin-text').textContent = `You were previously in room ${session.code}. Rejoin?`;
+  el('rejoin-box').hidden = false;
+}
+
+el('rejoin-btn').addEventListener('click', () => {
+  const session = loadSession();
+  if (!session) return;
+  attemptingRejoin = true;
+  socket.emit('rejoin-room', session);
+});
+
+el('dismiss-rejoin-btn').addEventListener('click', () => {
+  clearSession();
+  el('rejoin-box').hidden = true;
+});
+
+showRejoinOffer();
+
 // ---------------- Socket wiring ----------------
 
 socket.on('joined', ({ code, playerId }) => {
   myId = playerId;
   myCode = code;
+  attemptingRejoin = false;
+  saveSession(code, playerId);
+  el('rejoin-box').hidden = true;
 });
 
-socket.on('error-message', (msg) => showToast(msg));
+socket.on('error-message', (msg) => {
+  showToast(msg);
+  if (attemptingRejoin) {
+    attemptingRejoin = false;
+    clearSession();
+    el('rejoin-box').hidden = true;
+  }
+});
 
 socket.on('chat', (msg) => {
   chatLog.push(msg);
@@ -240,6 +289,12 @@ function buildBoardCells() {
       typeIcon.src = space.type === 'chance' ? ICONS.chanceBoard : ICONS.communityBoard;
       typeIcon.alt = '';
       cell.appendChild(typeIcon);
+    }
+
+    if (space.type === 'property' || space.type === 'railroad' || space.type === 'utility') {
+      cell.addEventListener('mouseenter', () => showTooltip(i));
+      cell.addEventListener('mousemove', positionTooltip);
+      cell.addEventListener('mouseleave', hideTooltip);
     }
 
     const housesEl = document.createElement('div');
@@ -547,7 +602,7 @@ function renderGame(state) {
 
 function renderPlayers(state) {
   const panel = el('players-panel');
-  panel.innerHTML = '<h3>Adventurers</h3>';
+  panel.innerHTML = `<h3>Adventurers of Room ${state.code || myCode || ''}</h3>`;
   state.players.forEach((p) => {
     const row = document.createElement('div');
     row.className = 'player-row';
@@ -562,6 +617,10 @@ function renderPlayers(state) {
       ${!p.connected ? '<span class="disc-tag">offline</span>' : ''}
     `;
     panel.appendChild(row);
+
+    if (!p.connected && !p.bankrupt) {
+      panel.appendChild(voteKickRow(state, p));
+    }
   });
   if (state.phase === 'game-over') {
     const banner = document.createElement('div');
@@ -573,6 +632,32 @@ function renderPlayers(state) {
 }
 
 function myPlayer(state) { return state.players.find((p) => p.id === myId); }
+
+function voteKickRow(state, target) {
+  const row = document.createElement('div');
+  row.className = 'vote-kick-row';
+  const eligible = state.players.filter((p) => !p.bankrupt && p.connected && p.id !== target.id);
+  const needed = Math.max(1, Math.ceil(eligible.length / 2));
+  const votes = (state.kickVotes && state.kickVotes[target.id]) || [];
+  const have = votes.filter((id) => eligible.some((p) => p.id === id)).length;
+  const me = myPlayer(state);
+  const iCanVote = me && !me.bankrupt && me.connected && me.id !== target.id;
+  const iVoted = votes.includes(myId);
+
+  if (iCanVote && !iVoted) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-small btn-danger';
+    btn.textContent = `Vote to remove (${have}/${needed})`;
+    btn.onclick = () => socket.emit('vote-kick', { targetId: target.id });
+    row.appendChild(btn);
+  } else {
+    const span = document.createElement('span');
+    span.className = 'hint';
+    span.textContent = iVoted ? `You voted to remove ${target.name} (${have}/${needed})` : `${have}/${needed} votes to remove`;
+    row.appendChild(span);
+  }
+  return row;
+}
 
 function renderControls(state) {
   const panel = el('controls-panel');
@@ -901,6 +986,64 @@ function rentTableHtml(space) {
   if (space.type === 'railroad') return `<p>Toll: 25/50/100/200gp depending on how many Spirit Tree stops you control.</p>`;
   if (space.type === 'utility') return `<p>Toll: 4x dice roll (1 owned) or 10x dice roll (both owned).</p>`;
   return '';
+}
+
+// ---------------- Board hover tooltip ----------------
+
+let tooltipEl = null;
+
+function ensureTooltipEl() {
+  if (!tooltipEl) {
+    tooltipEl = document.createElement('div');
+    tooltipEl.className = 'board-tooltip';
+    tooltipEl.hidden = true;
+    document.body.appendChild(tooltipEl);
+  }
+  return tooltipEl;
+}
+
+function tooltipHtmlFor(spaceIndex) {
+  const space = BOARD[spaceIndex];
+  const prop = latestState && latestState.properties[spaceIndex];
+  const owner = prop && prop.owner ? latestState.players.find((p) => p.id === prop.owner) : null;
+
+  let html = `<div class="tt-title">${space.name}</div>`;
+  html += owner
+    ? `<div class="tt-owner">Owned by ${owner.name}${prop.mortgaged ? ' (mortgaged)' : ''}</div>`
+    : '<div class="tt-owner">Unowned</div>';
+  html += `<div class="tt-row"><img class="coin-icon" src="${moneyIcon(space.price)}" alt="">Price: ${fmtGp(space.price)}</div>`;
+
+  if (space.type === 'property') {
+    if (prop && prop.houses > 0) {
+      html += `<div class="tt-row">Current level: ${prop.houses === 5 ? 'Castle' : prop.houses + ' hut(s)'}</div>`;
+    }
+    html += `<div class="tt-row"><img class="coin-icon" src="${moneyIcon(space.houseCost)}" alt="">Upgrade cost: ${fmtGp(space.houseCost)} per level</div>`;
+  }
+  html += rentTableHtml(space);
+  html += `<div class="tt-row tt-mortgage"><img class="coin-icon" src="${moneyIcon(space.mortgage)}" alt="">Mortgage value: ${fmtGp(space.mortgage)}</div>`;
+  return html;
+}
+
+function showTooltip(spaceIndex) {
+  const t = ensureTooltipEl();
+  t.innerHTML = tooltipHtmlFor(spaceIndex);
+  t.hidden = false;
+}
+
+function positionTooltip(e) {
+  if (!tooltipEl || tooltipEl.hidden) return;
+  const pad = 16;
+  let x = e.clientX + pad;
+  let y = e.clientY + pad;
+  const rect = tooltipEl.getBoundingClientRect();
+  if (x + rect.width > window.innerWidth) x = e.clientX - rect.width - pad;
+  if (y + rect.height > window.innerHeight) y = e.clientY - rect.height - pad;
+  tooltipEl.style.left = `${Math.max(4, x)}px`;
+  tooltipEl.style.top = `${Math.max(4, y)}px`;
+}
+
+function hideTooltip() {
+  if (tooltipEl) tooltipEl.hidden = true;
 }
 
 // ---------------- Trade modal ----------------

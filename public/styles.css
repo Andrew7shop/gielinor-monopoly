@@ -54,6 +54,12 @@ h2 { color: var(--wood); }
 .subtitle { text-align: center; color: var(--wood-light); margin-top: 0; }
 .hint { font-size: .8rem; color: var(--wood-light); }
 
+.rejoin-box {
+  background: var(--gold-bright); border: 2px solid var(--wood); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 14px;
+}
+.rejoin-box p { margin: 0 0 8px; font-weight: bold; color: var(--wood); }
+
 .field { display: block; margin: 14px 0; }
 .field > span { display: block; font-weight: bold; margin-bottom: 4px; color: var(--wood); }
 .field input, .join-row input {
@@ -284,6 +290,8 @@ h2 { color: var(--wood); }
 .player-row .pcash { font-variant-numeric: tabular-nums; }
 .player-row .jail-tag { font-size: .7rem; color: var(--danger); }
 .player-row .disc-tag { font-size: .7rem; color: #888; }
+.vote-kick-row { padding: 0 2px 6px 24px; }
+.vote-kick-row .hint { font-size: .7rem; }
 
 .controls-panel .roll-result { font-size: 1.4rem; text-align: center; margin: 6px 0; }
 .action-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
@@ -320,6 +328,19 @@ h2 { color: var(--wood); }
 }
 .trade-side { border: 2px dashed var(--wood-light); border-radius: 8px; padding: 8px; margin: 6px 0; }
 .checkbox-row { display: flex; align-items: center; gap: 6px; font-weight: normal; }
+
+.board-tooltip {
+  position: fixed; z-index: 300; pointer-events: none;
+  background: #fff8e6; border: 2px solid var(--wood); border-radius: 8px;
+  padding: 8px 10px; font-size: .75rem; max-width: 220px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.5); color: var(--ink);
+}
+.board-tooltip .tt-title { font-weight: bold; font-size: .85rem; color: var(--wood); margin-bottom: 2px; }
+.board-tooltip .tt-owner { font-style: italic; color: var(--wood-light); margin-bottom: 4px; }
+.board-tooltip .tt-row { display: flex; align-items: center; gap: 4px; margin: 2px 0; }
+.board-tooltip .tt-mortgage { margin-top: 4px; border-top: 1px dotted var(--wood-light); padding-top: 4px; }
+.board-tooltip table { margin-top: 2px; }
+.board-tooltip .coin-icon { width: 11px; height: 11px; }
 
 .toast {
   position: fixed; top: 12px; left: 50%; transform: translateX(-50%);

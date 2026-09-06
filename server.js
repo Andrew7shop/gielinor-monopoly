@@ -2,6 +2,7 @@
 
 const path = require('path');
 const http = require('http');
+const crypto = require('crypto');
 const express = require('express');
 const { Server } = require('socket.io');
 const { Room, GameError } = require('./src/gameEngine');
@@ -19,8 +20,8 @@ const io = new Server(server);
 
 /** @type {Map<string, Room>} */
 const rooms = new Map();
-/** @type {Map<string, string>} socket.id -> room code */
-const socketRoom = new Map();
+/** @type {Map<string, {code: string, playerId: string}>} socket.id -> current seat */
+const socketToPlayer = new Map();
 
 function makeRoomCode() {
   let code;
@@ -60,13 +61,14 @@ io.on('connection', (socket) => {
   socket.on('create-room', ({ name, tokenId }) => {
     try {
       const code = makeRoomCode();
-      const room = new Room(code, socket.id);
+      const playerId = crypto.randomUUID();
+      const room = new Room(code, playerId);
       room.lastActivity = Date.now();
-      room.addPlayer(socket.id, String(name || ''), tokenId);
+      room.addPlayer(playerId, String(name || ''), tokenId);
       rooms.set(code, room);
-      socketRoom.set(socket.id, code);
+      socketToPlayer.set(socket.id, { code, playerId });
       socket.join(code);
-      socket.emit('joined', { code, playerId: socket.id });
+      socket.emit('joined', { code, playerId });
       broadcast(code);
     } catch (err) {
       socket.emit('error-message', err.message || 'Could not create room.');
@@ -81,69 +83,89 @@ io.on('connection', (socket) => {
       return;
     }
     try {
-      room.addPlayer(socket.id, String(name || ''), tokenId);
-      socketRoom.set(socket.id, roomCode);
+      const playerId = crypto.randomUUID();
+      room.addPlayer(playerId, String(name || ''), tokenId);
+      socketToPlayer.set(socket.id, { code: roomCode, playerId });
       socket.join(roomCode);
-      socket.emit('joined', { code: roomCode, playerId: socket.id });
+      socket.emit('joined', { code: roomCode, playerId });
       broadcast(roomCode);
     } catch (err) {
       socket.emit('error-message', err.message || 'Could not join room.');
     }
   });
 
+  socket.on('rejoin-room', ({ code, playerId }) => {
+    const roomCode = String(code || '').toUpperCase();
+    const room = rooms.get(roomCode);
+    if (!room) {
+      socket.emit('error-message', 'That room no longer exists.');
+      return;
+    }
+    try {
+      room.reconnectPlayer(String(playerId || ''));
+      socketToPlayer.set(socket.id, { code: roomCode, playerId });
+      socket.join(roomCode);
+      socket.emit('joined', { code: roomCode, playerId });
+      broadcast(roomCode);
+    } catch (err) {
+      socket.emit('error-message', err.message || 'Could not rejoin room.');
+    }
+  });
+
   socket.on('chat', ({ text }) => {
-    const code = socketRoom.get(socket.id);
-    const room = code && rooms.get(code);
+    const entry = socketToPlayer.get(socket.id);
+    const room = entry && rooms.get(entry.code);
     if (!room) return;
-    const player = room.findPlayer(socket.id);
+    const player = room.findPlayer(entry.playerId);
     const clean = String(text || '').slice(0, 300).trim();
     if (!clean || !player) return;
-    io.to(code).emit('chat', { name: player.name, text: clean, t: Date.now() });
+    io.to(entry.code).emit('chat', { name: player.name, text: clean, t: Date.now() });
   });
 
   const action = (event, handler) => {
     socket.on(event, (payload = {}) => {
-      const code = socketRoom.get(socket.id);
-      if (!code) {
+      const entry = socketToPlayer.get(socket.id);
+      if (!entry) {
         socket.emit('error-message', 'You are not in a room.');
         return;
       }
-      withRoom(socket, code, (room) => handler(room, payload));
+      withRoom(socket, entry.code, (room) => handler(room, payload, entry.playerId));
     });
   };
 
-  action('start-game', (room) => {
-    if (room.hostId !== socket.id) throw new GameError('Only the host can start the game.');
+  action('start-game', (room, payload, playerId) => {
+    if (room.hostId !== playerId) throw new GameError('Only the host can start the game.');
     room.startGame();
   });
-  action('roll-dice', (room) => room.rollDice(socket.id));
-  action('buy-property', (room) => room.buyProperty(socket.id));
-  action('decline-property', (room) => room.declineProperty(socket.id));
-  action('place-bid', (room, { amount }) => room.placeBid(socket.id, Number(amount)));
-  action('pass-bid', (room) => room.passBid(socket.id));
-  action('end-turn', (room) => room.endTurn(socket.id));
-  action('pay-jail-fine', (room) => room.payJailFine(socket.id));
-  action('use-jail-card', (room) => room.useJailCard(socket.id));
-  action('build-house', (room, { spaceIndex }) => room.buildHouse(socket.id, Number(spaceIndex)));
-  action('sell-house', (room, { spaceIndex }) => room.sellHouse(socket.id, Number(spaceIndex)));
-  action('mortgage-property', (room, { spaceIndex }) => room.mortgageProperty(socket.id, Number(spaceIndex)));
-  action('unmortgage-property', (room, { spaceIndex }) => room.unmortgageProperty(socket.id, Number(spaceIndex)));
-  action('declare-bankruptcy', (room) => room.declareBankruptcy(socket.id));
-  action('propose-trade', (room, { toId, offer, request }) => room.proposeTrade(socket.id, toId, offer, request));
-  action('respond-trade', (room, { tradeId, accept }) => room.respondTrade(tradeId, socket.id, !!accept));
+  action('roll-dice', (room, payload, playerId) => room.rollDice(playerId));
+  action('buy-property', (room, payload, playerId) => room.buyProperty(playerId));
+  action('decline-property', (room, payload, playerId) => room.declineProperty(playerId));
+  action('place-bid', (room, { amount }, playerId) => room.placeBid(playerId, Number(amount)));
+  action('pass-bid', (room, payload, playerId) => room.passBid(playerId));
+  action('end-turn', (room, payload, playerId) => room.endTurn(playerId));
+  action('pay-jail-fine', (room, payload, playerId) => room.payJailFine(playerId));
+  action('use-jail-card', (room, payload, playerId) => room.useJailCard(playerId));
+  action('build-house', (room, { spaceIndex }, playerId) => room.buildHouse(playerId, Number(spaceIndex)));
+  action('sell-house', (room, { spaceIndex }, playerId) => room.sellHouse(playerId, Number(spaceIndex)));
+  action('mortgage-property', (room, { spaceIndex }, playerId) => room.mortgageProperty(playerId, Number(spaceIndex)));
+  action('unmortgage-property', (room, { spaceIndex }, playerId) => room.unmortgageProperty(playerId, Number(spaceIndex)));
+  action('declare-bankruptcy', (room, payload, playerId) => room.declareBankruptcy(playerId));
+  action('propose-trade', (room, { toId, offer, request }, playerId) => room.proposeTrade(playerId, toId, offer, request));
+  action('respond-trade', (room, { tradeId, accept }, playerId) => room.respondTrade(tradeId, playerId, !!accept));
+  action('vote-kick', (room, { targetId }, playerId) => room.voteKick(playerId, targetId));
 
   socket.on('disconnect', () => {
-    const code = socketRoom.get(socket.id);
-    socketRoom.delete(socket.id);
-    if (!code) return;
-    const room = rooms.get(code);
+    const entry = socketToPlayer.get(socket.id);
+    socketToPlayer.delete(socket.id);
+    if (!entry) return;
+    const room = rooms.get(entry.code);
     if (!room) return;
-    room.removePlayer(socket.id);
+    room.removePlayer(entry.playerId);
     if (!room.started && room.players.length === 0) {
-      rooms.delete(code);
+      rooms.delete(entry.code);
       return;
     }
-    broadcast(code);
+    broadcast(entry.code);
   });
 });
 

@@ -50,6 +50,7 @@ class Room {
     this.lastPartyClaim = null;
     this.goSeq = 0;
     this.lastGoPass = null;
+    this.kickVotes = {};
     this.winnerId = null;
     this.started = false;
   }
@@ -120,6 +121,16 @@ class Room {
       p.connected = false;
       this.addLog(`${p.name} disconnected.`);
     }
+  }
+
+  reconnectPlayer(id) {
+    const p = this.findPlayer(id);
+    if (!p) throw new GameError('That seat no longer exists in this room.');
+    if (p.bankrupt) throw new GameError('That player is already out of the game.');
+    p.connected = true;
+    delete this.kickVotes[id];
+    this.addLog(`${p.name} reconnected.`);
+    return p;
   }
 
   startGame() {
@@ -268,6 +279,64 @@ class Room {
       this.addLog(remaining[0] ? `${remaining[0].name} wins the game!` : 'The game has ended.');
     } else if (this.currentPlayer().id === playerId) {
       this.advanceTurn();
+    }
+  }
+
+  kickPlayer(playerId) {
+    const player = this.findPlayer(playerId);
+    if (!player || player.bankrupt) throw new GameError('That player cannot be removed.');
+
+    if (this.pendingDebt && this.pendingDebt.playerId === playerId) this.pendingDebt = null;
+
+    const wasAwaitingPurchase = this.phase === 'awaiting-purchase' && this.currentPlayer() && this.currentPlayer().id === playerId;
+    if (wasAwaitingPurchase) {
+      this.pendingPurchase = null;
+      this.phase = 'awaiting-roll';
+    }
+
+    const wasInAuction = this.phase === 'auction' && this.auction && this._auctionActive
+      && this._auctionActive.includes(playerId) && !this.auction.passed.includes(playerId);
+    if (wasInAuction) this.auction.passed.push(playerId);
+
+    const owned = Object.keys(this.properties).filter((i) => this.properties[i].owner === playerId).map(Number);
+    this.partyFund += player.cash;
+    owned.forEach((i) => {
+      this.properties[i] = { owner: null, houses: 0, mortgaged: false };
+    });
+    player.cash = 0;
+    player.bankrupt = true;
+    delete this.kickVotes[playerId];
+    this.addLog(`${player.name} was voted out of the game after disconnecting.`);
+
+    const remaining = this.activePlayers();
+    if (remaining.length <= 1) {
+      this.phase = 'game-over';
+      this.winnerId = remaining[0] ? remaining[0].id : null;
+      this.addLog(remaining[0] ? `${remaining[0].name} wins the game!` : 'The game has ended.');
+      return;
+    }
+    if (wasInAuction) this.maybeCloseAuction();
+    if (this.currentPlayer() && this.currentPlayer().id === playerId) this.advanceTurn();
+  }
+
+  voteKick(voterId, targetId) {
+    const voter = this.findPlayer(voterId);
+    const target = this.findPlayer(targetId);
+    if (!voter || voter.bankrupt || !voter.connected) throw new GameError('You cannot vote right now.');
+    if (!target || target.bankrupt) throw new GameError('That player cannot be voted on.');
+    if (target.connected) throw new GameError('That player is still connected.');
+    if (voterId === targetId) throw new GameError('You cannot vote on yourself.');
+
+    if (!this.kickVotes[targetId]) this.kickVotes[targetId] = new Set();
+    if (this.kickVotes[targetId].has(voterId)) throw new GameError('You already voted.');
+    this.kickVotes[targetId].add(voterId);
+    this.addLog(`${voter.name} votes to remove ${target.name} (disconnected).`);
+
+    const eligible = this.activePlayers().filter((p) => p.id !== targetId && p.connected);
+    const needed = Math.max(1, Math.ceil(eligible.length / 2));
+    const have = [...this.kickVotes[targetId]].filter((id) => eligible.some((p) => p.id === id)).length;
+    if (eligible.length > 0 && have >= needed) {
+      this.kickPlayer(targetId);
     }
   }
 
@@ -801,6 +870,7 @@ class Room {
       lastPartyClaim: this.lastPartyClaim,
       goSeq: this.goSeq,
       lastGoPass: this.lastGoPass,
+      kickVotes: Object.fromEntries(Object.entries(this.kickVotes).map(([k, v]) => [k, [...v]])),
       log: this.log.slice(-40),
       winnerId: this.winnerId
     };
