@@ -33,6 +33,8 @@ class Room {
     this.turnState = { hasRolled: false, mustRollAgain: false };
     this.lastRoll = null;
     this.rollSeq = 0;
+    this.lastCard = null;
+    this.cardSeq = 0;
     this.chanceDeck = shuffledDeck(TREASURE_TRAIL);
     this.chancePos = 0;
     this.communityDeck = shuffledDeck(RANDOM_EVENT);
@@ -280,6 +282,8 @@ class Room {
       this.communityDeck = deck;
       this.communityPos = pos;
     }
+    this.cardSeq += 1;
+    this.lastCard = { deck: deckKey, text: card.text, playerName: player.name };
     this.addLog(`${player.name} draws: "${card.text}"`);
     this.applyCard(card, player);
   }
@@ -763,6 +767,8 @@ class Room {
       turnState: this.turnState,
       lastRoll: this.lastRoll,
       rollSeq: this.rollSeq,
+      lastCard: this.lastCard,
+      cardSeq: this.cardSeq,
       pendingPurchase: this.pendingPurchase,
       auction: this.auction
         ? { ...this.auction, active: this._auctionActive, spaceName: BOARD[this.auction.spaceIndex].name }

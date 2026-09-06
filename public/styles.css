@@ -165,6 +165,7 @@ h2 { color: var(--wood); }
   gap: 10px;
   padding: 10px;
   text-align: center;
+  position: relative;
 }
 .board-title { font-weight: bold; font-size: 1rem; color: var(--wood); }
 .dice-stage { display: flex; gap: 14px; }
@@ -193,6 +194,40 @@ h2 { color: var(--wood); }
 .pip { border-radius: 50%; background: var(--ink); opacity: 0; align-self: center; justify-self: center; width: 60%; height: 60%; }
 .pip.on { opacity: 1; }
 .dice-caption { font-size: .85rem; color: var(--wood-light); min-height: 1.2em; }
+
+.card-decks { display: flex; gap: clamp(16px, 5vw, 30px); }
+.card-deck { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.deck-stack { position: relative; width: 15vw; max-width: 46px; min-width: 30px; aspect-ratio: 3 / 4; }
+.stack-card {
+  position: absolute; inset: 0;
+  border: 2px solid var(--wood); border-radius: 6px;
+  background: #fff8e6;
+  box-shadow: 0 2px 3px rgba(0,0,0,.3);
+}
+.stack-card:nth-child(1) { transform: rotate(-7deg) translate(-2px, 1px); }
+.stack-card:nth-child(2) { transform: rotate(4deg) translate(2px, -1px); }
+.stack-card.top { display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transform: none; }
+.chance-deck .top { background: #f6e7c9; }
+.community-deck .top { background: #e3e0f7; }
+.deck-label { font-size: .65rem; font-weight: bold; color: var(--wood); white-space: nowrap; }
+
+.card-reveal { position: absolute; inset: 4%; display: flex; align-items: center; justify-content: center; z-index: 5; }
+.card-reveal[hidden] { display: none; }
+.revealed-card {
+  width: 100%; max-width: 300px;
+  background: #fff8e6; border: 4px solid var(--wood); border-radius: 12px;
+  padding: 16px; text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,.5);
+  transform: scale(0.4) rotateY(90deg);
+  opacity: 0;
+}
+.card-reveal.pop .revealed-card { animation: card-pop .4s ease-out forwards; }
+@keyframes card-pop { to { transform: scale(1) rotateY(0deg); opacity: 1; } }
+.revealed-card-deck { font-weight: bold; font-size: 1.05rem; margin-bottom: 6px; color: var(--wood); }
+.revealed-card-who { font-size: .75rem; color: var(--wood-light); margin-bottom: 8px; }
+.revealed-card-text { font-style: italic; font-size: .95rem; color: var(--ink); }
+.card-reveal.chance .revealed-card { background: #f6e7c9; border-color: #8a6d23; }
+.card-reveal.community .revealed-card { background: #e3e0f7; border-color: #4a3a8f; }
 
 .sidebar {
   width: min(92vw, 420px);

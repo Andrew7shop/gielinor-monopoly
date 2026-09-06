@@ -14,6 +14,10 @@ let lastSeenRollSeq = 0;
 let diceSeqInitialized = false;
 let diceAnimTimer = null;
 let diceEls = null;
+let lastSeenCardSeq = 0;
+let cardSeqInitialized = false;
+let cardHideTimer = null;
+let cardEls = null;
 
 const el = (id) => document.getElementById(id);
 const GROUP_LABEL = {
@@ -222,6 +226,23 @@ function buildBoardCells() {
       <div class="die" id="die-2"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
     </div>
     <div id="dice-caption" class="dice-caption"></div>
+    <div class="card-decks">
+      <div class="card-deck">
+        <div class="deck-stack chance-deck"><div class="stack-card"></div><div class="stack-card"></div><div class="stack-card top">🗺️</div></div>
+        <div class="deck-label">Treasure Trail</div>
+      </div>
+      <div class="card-deck">
+        <div class="deck-stack community-deck"><div class="stack-card"></div><div class="stack-card"></div><div class="stack-card top">🎁</div></div>
+        <div class="deck-label">Random Event</div>
+      </div>
+    </div>
+    <div id="card-reveal" class="card-reveal" hidden>
+      <div class="revealed-card">
+        <div class="revealed-card-deck" id="revealed-card-deck"></div>
+        <div class="revealed-card-who" id="revealed-card-who"></div>
+        <div class="revealed-card-text" id="revealed-card-text"></div>
+      </div>
+    </div>
   `;
   board.appendChild(center);
   diceEls = {
@@ -231,6 +252,12 @@ function buildBoardCells() {
   };
   setDieFace(diceEls.die1, 1);
   setDieFace(diceEls.die2, 1);
+  cardEls = {
+    reveal: document.getElementById('card-reveal'),
+    deckLabel: document.getElementById('revealed-card-deck'),
+    who: document.getElementById('revealed-card-who'),
+    text: document.getElementById('revealed-card-text')
+  };
 }
 
 const PIPS_FOR_VALUE = {
@@ -293,6 +320,36 @@ function renderDiceStage(state) {
   }
 }
 
+function renderCardStage(state) {
+  if (!cardEls) return;
+  if (!state.lastCard) return;
+  if (!cardSeqInitialized) {
+    cardSeqInitialized = true;
+    lastSeenCardSeq = state.cardSeq;
+    return;
+  }
+  if (state.cardSeq && state.cardSeq !== lastSeenCardSeq) {
+    lastSeenCardSeq = state.cardSeq;
+    const card = state.lastCard;
+    setTimeout(() => showCardReveal(card), 650);
+  }
+}
+
+function showCardReveal(card) {
+  clearTimeout(cardHideTimer);
+  const isChance = card.deck === 'chance';
+  cardEls.deckLabel.textContent = isChance ? '🗺️ Treasure Trail' : '🎁 Random Event';
+  cardEls.reveal.classList.toggle('chance', isChance);
+  cardEls.reveal.classList.toggle('community', !isChance);
+  cardEls.who.textContent = card.playerName ? `${card.playerName} draws...` : '';
+  cardEls.text.textContent = card.text;
+  cardEls.reveal.hidden = false;
+  cardEls.reveal.classList.remove('pop');
+  void cardEls.reveal.offsetWidth;
+  cardEls.reveal.classList.add('pop');
+  cardHideTimer = setTimeout(() => { cardEls.reveal.hidden = true; }, 5000);
+}
+
 function updateBoardCells(state) {
   BOARD.forEach((space, i) => {
     const refs = cellEls[i];
@@ -341,6 +398,7 @@ function updateBoardCells(state) {
 function renderGame(state) {
   updateBoardCells(state);
   renderDiceStage(state);
+  renderCardStage(state);
   renderPlayers(state);
   renderControls(state);
   renderProperties(state);
