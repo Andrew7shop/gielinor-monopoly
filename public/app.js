@@ -20,6 +20,8 @@ let cardHideTimer = null;
 let cardEls = null;
 let partyFundEls = null;
 let lastSeenPartyFund = null;
+let lastSeenPartyClaimSeq = 0;
+let partyClaimSeqInitialized = false;
 
 const ICONS = {
   coinTiers: [
@@ -395,6 +397,51 @@ function renderPartyFund(state) {
     partyFundEls.box.classList.add('flash');
   }
   lastSeenPartyFund = state.partyFund;
+
+  if (!partyClaimSeqInitialized) {
+    partyClaimSeqInitialized = true;
+    lastSeenPartyClaimSeq = state.partyClaimSeq || 0;
+    return;
+  }
+  if (state.partyClaimSeq && state.partyClaimSeq !== lastSeenPartyClaimSeq) {
+    lastSeenPartyClaimSeq = state.partyClaimSeq;
+    if (state.lastPartyClaim) launchConfetti(state.lastPartyClaim);
+  }
+}
+
+const CONFETTI_EMOJI = ['🎉', '🎊', '✨', '🥳', '🎈', '💰'];
+
+function launchConfetti(claim) {
+  const layer = document.createElement('div');
+  layer.className = 'confetti-layer';
+
+  const banner = document.createElement('div');
+  banner.className = 'confetti-banner';
+  banner.textContent = `🎉 ${claim.playerName} claims ${fmtGp(claim.amount)} from the Party Room Fund! 🎉`;
+  layer.appendChild(banner);
+
+  const pieceCount = 70;
+  for (let i = 0; i < pieceCount; i++) {
+    const piece = document.createElement('span');
+    piece.className = 'confetti-piece';
+    piece.textContent = CONFETTI_EMOJI[Math.floor(Math.random() * CONFETTI_EMOJI.length)];
+    const left = Math.random() * 100;
+    const duration = 1.8 + Math.random() * 1.6;
+    const delay = Math.random() * 0.4;
+    const drift = (Math.random() * 2 - 1) * 80;
+    const size = 16 + Math.random() * 18;
+    const spin = (Math.random() * 2 - 1) * 540;
+    piece.style.left = `${left}vw`;
+    piece.style.fontSize = `${size}px`;
+    piece.style.animationDuration = `${duration}s`;
+    piece.style.animationDelay = `${delay}s`;
+    piece.style.setProperty('--drift', `${drift}px`);
+    piece.style.setProperty('--spin', `${spin}deg`);
+    layer.appendChild(piece);
+  }
+
+  document.body.appendChild(layer);
+  setTimeout(() => layer.remove(), 3600);
 }
 
 function showCardReveal(card) {

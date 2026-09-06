@@ -312,6 +312,35 @@ h2 { color: var(--wood); }
   z-index: 100; box-shadow: 0 4px 16px rgba(0,0,0,.4);
 }
 
+.confetti-layer {
+  position: fixed; inset: 0; z-index: 200; pointer-events: none;
+  overflow: hidden;
+}
+.confetti-piece {
+  position: absolute; top: -40px;
+  animation-name: confetti-fall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+  will-change: transform, opacity;
+}
+@keyframes confetti-fall {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--drift), 110vh) rotate(var(--spin)); opacity: .9; }
+}
+.confetti-banner {
+  position: absolute; top: 14%; left: 50%; transform: translateX(-50%);
+  background: var(--gold-bright); color: var(--wood); font-weight: bold;
+  padding: 10px 22px; border: 3px solid var(--wood); border-radius: 10px;
+  font-size: 1.05rem; text-align: center; max-width: 90vw;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  animation: confetti-banner-pop .5s ease-out;
+}
+@keyframes confetti-banner-pop {
+  0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
+  60% { transform: translateX(-50%) scale(1.08); opacity: 1; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
 .winner-banner {
   text-align: center; font-size: 1.3rem; font-weight: bold; color: var(--wood);
   background: var(--gold-bright); border: 3px solid var(--wood); border-radius: 8px; padding: 14px;

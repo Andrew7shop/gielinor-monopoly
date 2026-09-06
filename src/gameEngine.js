@@ -46,6 +46,8 @@ class Room {
     this.trades = {};
     this.tradeSeq = 1;
     this.partyFund = 100;
+    this.partyClaimSeq = 0;
+    this.lastPartyClaim = null;
     this.winnerId = null;
     this.started = false;
   }
@@ -416,6 +418,8 @@ class Room {
   claimPartyFund(player) {
     const amount = this.partyFund;
     player.cash += amount;
+    this.partyClaimSeq += 1;
+    this.lastPartyClaim = { playerName: player.name, amount };
     this.addLog(`${player.name} claims the ${amount}gp Party Room Fund!`);
     this.partyFund = 100;
   }
@@ -790,6 +794,8 @@ class Room {
       pendingDebt: this.pendingDebt,
       trades: Object.values(this.trades),
       partyFund: this.partyFund,
+      partyClaimSeq: this.partyClaimSeq,
+      lastPartyClaim: this.lastPartyClaim,
       log: this.log.slice(-40),
       winnerId: this.winnerId
     };
