@@ -73,9 +73,9 @@ const BOARD = [
   /* 34 */ property('Prifddinas', 'green', 320, [28, 150, 450, 1000, 1200, 1400], 200, 160),
   /* 35 */ railroad('Spirit Tree: Miscellania'),
   /* 36 */ { type: 'chance', name: 'Treasure Trail' },
-  /* 37 */ property('Zanaris', 'darkBlue', 350, [35, 175, 500, 1100, 1300, 1500], 200, 175),
+  /* 37 */ property('Chambers of Xeric', 'darkBlue', 350, [35, 175, 500, 1100, 1300, 1500], 200, 175),
   /* 38 */ { type: 'tax', name: 'Donation to the Wise Old Man', amount: 75 },
-  /* 39 */ property('Menaphos', 'darkBlue', 400, [50, 200, 600, 1400, 1700, 2000], 200, 200)
+  /* 39 */ property('Theatre of Blood', 'darkBlue', 400, [50, 200, 600, 1400, 1700, 2000], 200, 200)
 ];
 
 const GO_SALARY = 200;

@@ -7,7 +7,7 @@
 
 const TREASURE_TRAIL = [
   { type: 'advance-to', dest: 0, text: 'You dig up a master clue near Lumbridge. Advance to GO and collect 200gp.' },
-  { type: 'advance-to', dest: 37, text: 'Your clue leads to Zanaris. Advance there (collect 200gp if you pass Lumbridge).' },
+  { type: 'advance-to', dest: 37, text: 'Your clue leads to the Chambers of Xeric. Advance there (collect 200gp if you pass Lumbridge).' },
   { type: 'advance-to', dest: 11, text: 'Your clue leads to Falador. Advance there (collect 200gp if you pass Lumbridge).' },
   { type: 'advance-to-nearest-utility', text: 'The trail leads to the nearest resource site. If unowned you may buy it; if owned, pay the owner 10x your last dice roll.' },
   { type: 'advance-to-nearest-railroad', text: 'Advance to the nearest Spirit Tree stop. If unowned you may buy it; if owned, pay double the usual toll.' },
